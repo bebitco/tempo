@@ -81,6 +81,12 @@ where
 
 impl MalachiteConsensusBuilder {
     pub fn new() -> Self {
-        todo!();
+        Self
+    }
+}
+
+impl Default for MalachiteConsensusBuilder {
+    fn default() -> Self {
+        Self::new()
     }
 }
