@@ -70,7 +70,7 @@ pub struct MalachiteConsensusBuilder;
 
 impl<Node> ConsensusBuilder<Node> for MalachiteConsensusBuilder
 where
-    Node: FullNodeTypes,
+    Node: FullNodeTypes<Types: reth_node_builder::NodeTypes<ChainSpec = ChainSpec>>,
 {
     type Consensus = Arc<MalachiteConsensus>;
 
