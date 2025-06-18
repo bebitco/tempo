@@ -48,6 +48,8 @@ alloy-eips = "1.0.9"
 alloy-consensus = "1.0.9"
 
 # Malachite dependencies
-malachite-core-types = { git = "https://github.com/informalsystems/malachite", branch = "main", package = "informalsystems-malachitebft-core-types" }
-malachitebft-app-channel = { git = "https://github.com/informalsystems/malachite", branch = "main", package = "informalsystems-malachitebft-app-channel" }
-malachitebft-proto = { git = "https://github.com/informalsystems/malachite", branch = "main", package = "informalsystems-malachitebft-proto" }
+malachitebft-core-types = { git = "https://github.com/informalsystems/malachite", branch = "no-dns", package = "informalsystems-malachitebft-core-types" }
+malachitebft-app-channel = { git = "https://github.com/informalsystems/malachite", branch = "no-dns", package = "informalsystems-malachitebft-app-channel" }
+
+[patch.crates-io]
+libp2p-dns = { git = "https://github.com/informalsystems/rust-libp2p.git", branch = "reth" }

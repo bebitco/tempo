@@ -1,5 +1,5 @@
 use crate::context::MalachiteContext;
-use malachite_core_types::{PrivateKey, PublicKey, Signature, SigningProvider, SigningScheme};
+use malachitebft_core_types::{PrivateKey, PublicKey, Signature, SigningProvider, SigningScheme};
 use std::fmt;
 
 // TODO: Implement Ed25519Provider

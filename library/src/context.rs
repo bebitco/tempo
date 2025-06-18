@@ -1,4 +1,4 @@
-use malachite_core_types::{
+use malachitebft_core_types::{
     Address as MalachiteAddress, Context, Extension as MalachiteExtension, Height as MalachiteHeight,
     NilOrVal, Proposal as MalachiteProposal, ProposalPart as MalachiteProposalPart,
     Round, SigningScheme, Value as MalachiteValue, Validator as MalachiteValidator,

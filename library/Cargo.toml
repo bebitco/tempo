@@ -15,7 +15,8 @@ tokio.workspace = true
 
 
 # Malachite dependencies
-malachite-core-types.workspace = true
+malachitebft-core-types.workspace = true
+malachitebft-app-channel.workspace = true
 
 # Reth dependencies
 reth-chainspec.workspace = true
