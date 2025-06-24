@@ -3,6 +3,7 @@ use crate::context::{
 };
 use crate::height::Height;
 use crate::provider::Ed25519Provider;
+use crate::store::Store;
 use crate::types::Address;
 use crate::utils::seed_from_address;
 use bytes::Bytes;
@@ -52,6 +53,7 @@ impl State {
         config: Config,
         genesis: Genesis,
         address: Address,
+        store: Store,
         engine_handle: BeaconConsensusEngineHandle<<EthereumNode as NodeTypes>::Payload>,
     ) -> Self {
         Self {
@@ -64,7 +66,7 @@ impl State {
             current_proposer: None,
             current_role: Role::None,
             peers: HashSet::new(),
-            store: Store::new(),
+            store,
             signing_provider: Ed25519Provider::new_test(),
             streams_map: PartStreamsMap::new(),
             rng: StdRng::seed_from_u64(seed_from_address(&address, std::process::id() as u64)),
@@ -254,44 +256,6 @@ pub enum Role {
 
 // Role conversion implementation removed as Role type is not exported from malachitebft_app_channel
 
-// Use reth store implementation
-#[derive(Debug, Clone)]
-pub struct Store {
-    // This would typically interface with reth's storage layer
-    // For now, we'll use a simple in-memory store
-    data: HashMap<Vec<u8>, Vec<u8>>,
-}
-
-impl Store {
-    pub fn new() -> Self {
-        Self {
-            data: HashMap::new(),
-        }
-    }
-
-    pub fn get(&self, key: &[u8]) -> Option<&Vec<u8>> {
-        self.data.get(key)
-    }
-
-    pub fn set(&mut self, key: Vec<u8>, value: Vec<u8>) {
-        self.data.insert(key, value);
-    }
-
-    pub fn delete(&mut self, key: &[u8]) -> Option<Vec<u8>> {
-        self.data.remove(key)
-    }
-
-    pub fn contains_key(&self, key: &[u8]) -> bool {
-        self.data.contains_key(key)
-    }
-}
-
-impl Default for Store {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct PartStreamsMap {
     // Maps from peer ID to their partial stream state
@@ -369,43 +333,6 @@ pub struct DecidedValue {
     pub certificate: CommitCertificate<MalachiteContext>,
 }
 
-impl Store {
-    /// Returns the maximum decided value height
-    pub async fn max_decided_value_height(&self) -> Option<Height> {
-        // For now, return None - this would query the highest committed height
-        None
-    }
-
-    /// Gets undecided proposals for a height and round
-    pub async fn get_undecided_proposals(
-        &self,
-        _height: Height,
-        _round: Round,
-    ) -> Result<Vec<ProposedValue<MalachiteContext>>> {
-        // For now, return empty vec - this would query pending proposals
-        Ok(vec![])
-    }
-
-    /// Stores an undecided proposal
-    pub async fn store_undecided_proposal(
-        &mut self,
-        _proposal: ProposedValue<MalachiteContext>,
-    ) -> Result<()> {
-        // For now, do nothing - this would store the proposal
-        Ok(())
-    }
-
-    /// Gets an undecided proposal by height, round, and value ID
-    pub async fn get_undecided_proposal(
-        &self,
-        _height: Height,
-        _round: Round,
-        _value_id: ValueId,
-    ) -> Result<Option<ProposedValue<MalachiteContext>>> {
-        // For now, return None - this would query a specific proposal
-        Ok(None)
-    }
-}
 
 // Standalone functions
 
