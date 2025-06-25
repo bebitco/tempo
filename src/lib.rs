@@ -53,7 +53,6 @@
 //! 3. Connects them through the channel-based communication layer
 
 pub mod app;
-pub mod block;
 pub mod cli;
 pub mod codec;
 pub mod consensus;
@@ -66,7 +65,6 @@ pub mod store;
 pub mod types;
 pub mod utils;
 
-pub use block::*;
 pub use consensus_utils::*;
 pub use context::*;
 pub use height::*;
