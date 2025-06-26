@@ -34,21 +34,16 @@ fn main() -> eyre::Result<()> {
 
             // Load configuration from file if provided, otherwise use defaults
             let config = if args.consensus_config.is_some() && args.config_file().exists() {
-                // TODO: Implement config file loading
                 tracing::info!("Loading config from: {:?}", args.config_file());
-                Config::new()
+                reth_malachite::app::config_loader::load_config(&args.config_file())?
             } else {
                 Config::new()
             };
 
             // Load genesis from file if provided, otherwise use default
             let genesis = if args.genesis.is_some() && args.genesis_file().exists() {
-                // TODO: Implement genesis file loading
                 tracing::info!("Loading genesis from: {:?}", args.genesis_file());
-                // For now, create a default genesis
-                let validator_address = Address::new([1; 20]);
-                let validator_info = ValidatorInfo::new(validator_address, 1000, vec![0; 32]);
-                Genesis::new(args.chain_id()).with_validators(vec![validator_info])
+                reth_malachite::app::config_loader::load_genesis(&args.genesis_file())?
             } else {
                 // Create a default genesis with initial validators
                 let validator_address = Address::new([1; 20]);
@@ -57,15 +52,22 @@ fn main() -> eyre::Result<()> {
             };
 
             // Load validator key to derive node address if provided
-            let address = if args.validator_key.is_some() && args.validator_key_file().exists() {
-                // TODO: Load validator key and derive address
+            let (address, _validator_pubkey, validator_privkey) = if args.validator_key.is_some()
+                && args.validator_key_file().exists()
+            {
                 tracing::info!(
                     "Loading validator key from: {:?}",
                     args.validator_key_file()
                 );
-                Address::new([0; 20])
+                let (addr, pubkey, privkey) =
+                    reth_malachite::app::config_loader::load_validator_key(
+                        &args.validator_key_file(),
+                    )?;
+                tracing::info!("Loaded validator address: {:?}", addr);
+                (addr, Some(pubkey), Some(privkey))
             } else {
-                Address::new([0; 20])
+                tracing::warn!("No validator key provided, node will run in non-validator mode");
+                (Address::new([0; 20]), None, None)
             };
             // Launch the Reth node first to get the engine handle
             let reth_node = RethNode::new();
@@ -96,6 +98,22 @@ fn main() -> eyre::Result<()> {
             // Get the provider from the node
             let provider = node.provider.clone();
 
+            // Create the signing provider if we have a validator key
+            let signing_provider = if let Some(privkey) = validator_privkey {
+                match reth_malachite::provider::Ed25519Provider::from_bytes(&privkey) {
+                    Ok(provider) => {
+                        tracing::info!("Created signing provider for validator");
+                        Some(provider)
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to create signing provider: {}", e);
+                        None
+                    }
+                }
+            } else {
+                None
+            };
+
             // Create the application state using the factory method
             // This encapsulates Store creation and verification
             let state = State::from_provider(
@@ -106,6 +124,7 @@ fn main() -> eyre::Result<()> {
                 Arc::new(provider),
                 app_handle,
                 payload_builder_handle,
+                signing_provider,
             )
             .await?;
 
