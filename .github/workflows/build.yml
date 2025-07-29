@@ -1,8 +1,7 @@
 on:
-- push:
-    branches:
-    - production
-- pull_request
+  push:
+    branches: [production]
+  pull_request:
 
 jobs:
   build:
@@ -28,4 +27,9 @@ jobs:
         just install-cross
     - run: |
         just build-all-release
+    - uses: actions/upload-artifact@v4
+      with:
+        name: tempo-x86_64-unknown-linux-gnu
+        path: target/x86_64-unknown-linux-gnu/release/reth-malachite
+
     
