@@ -1,7 +1,7 @@
 use crate::{
     TIP20_FACTORY_ADDRESS,
     contracts::{
-        is_tip20,
+        address_to_token_id_unchecked, is_tip20,
         storage::StorageProvider,
         tip20::TIP20Token,
         token_id_to_address,
@@ -50,23 +50,19 @@ impl<'a, S: StorageProvider> TIP20Factory<'a, S> {
         sender: &Address,
         call: ITIP20Factory::createTokenCall,
     ) -> Result<U256, TIP20Error> {
-        if !is_tip20(&call.linkingToken) {
+        let token_id = self.token_id_counter().to::<u64>();
+        trace!(%sender, %token_id, ?call, "Create token");
+
+        // Ensure that the linking token is a valid TIP20 that is currently deployed.
+        // Note that the token Id increments on each deployment which ensures that the linking
+        // token id must always be <= the current token_id
+        if !is_tip20(&call.linkingToken)
+            || address_to_token_id_unchecked(&call.linkingToken) > token_id
+        {
             return Err(TIP20Error::invalid_linking_token());
         }
 
-        let token_id = self.token_id_counter();
-        trace!(%sender, %token_id, ?call, "Create token");
-
-        // increase the token counter
-        self.storage
-            .sstore(
-                TIP20_FACTORY_ADDRESS,
-                slots::TOKEN_ID_COUNTER,
-                token_id + U256::ONE,
-            )
-            .expect("TODO: handle error");
-
-        TIP20Token::new(token_id.try_into().unwrap(), self.storage).initialize(
+        TIP20Token::new(token_id, self.storage).initialize(
             &call.name,
             &call.symbol,
             &call.currency,
@@ -74,6 +70,7 @@ impl<'a, S: StorageProvider> TIP20Factory<'a, S> {
             &call.admin,
         )?;
 
+        let token_id = U256::from(token_id);
         self.storage
             .emit_event(
                 TIP20_FACTORY_ADDRESS,
@@ -86,6 +83,15 @@ impl<'a, S: StorageProvider> TIP20Factory<'a, S> {
                     admin: call.admin,
                 })
                 .into_log_data(),
+            )
+            .expect("TODO: handle error");
+
+        // increase the token counter
+        self.storage
+            .sstore(
+                TIP20_FACTORY_ADDRESS,
+                slots::TOKEN_ID_COUNTER,
+                token_id + U256::ONE,
             )
             .expect("TODO: handle error");
 
@@ -162,5 +168,51 @@ mod tests {
         });
 
         assert_eq!(factory_events[1], expected_event_1.into_log_data());
+    }
+
+    #[test]
+    fn test_create_token_invalid_linking_token() {
+        let mut storage = HashMapStorageProvider::new(1);
+        let mut factory = TIP20Factory::new(&mut storage);
+
+        factory
+            .initialize()
+            .expect("Factory initialization should succeed");
+
+        let sender = Address::random();
+
+        let invalid_call = ITIP20Factory::createTokenCall {
+            name: "Test Token".to_string(),
+            symbol: "TEST".to_string(),
+            currency: "USD".to_string(),
+            linkingToken: Address::random(),
+            admin: sender,
+        };
+
+        let result = factory.create_token(&sender, invalid_call);
+        assert_eq!(result.unwrap_err(), TIP20Error::invalid_linking_token());
+    }
+
+    #[test]
+    fn test_create_token_linking_token_not_deployed() {
+        let mut storage = HashMapStorageProvider::new(1);
+        let mut factory = TIP20Factory::new(&mut storage);
+
+        factory
+            .initialize()
+            .expect("Factory initialization should succeed");
+
+        let sender = Address::random();
+        let non_existent_tip20 = token_id_to_address(5);
+        let invalid_call = ITIP20Factory::createTokenCall {
+            name: "Test Token".to_string(),
+            symbol: "TEST".to_string(),
+            currency: "USD".to_string(),
+            linkingToken: non_existent_tip20,
+            admin: sender,
+        };
+
+        let result = factory.create_token(&sender, invalid_call);
+        assert_eq!(result.unwrap_err(), TIP20Error::invalid_linking_token());
     }
 }
