@@ -8,6 +8,9 @@ Tempo is a fast and scalable blockchain designed for payments and on-chain trans
 - Experimenting with Base ecosystem integration
 
 ### Tech Stack
-- Rust, Blockchain, Base integration
+- Rust
+- Blockchain
+- Base integration
+
 
 
